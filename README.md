@@ -1,120 +1,76 @@
 # dbt-package-template
 
-This repository is a local-first starter template for new dbt packages.
+**`dbt_package_template`** is a dbt package of reusable **macros**. Add it as a dependency in your dbt project, run `dbt deps`, and call macros from the `dbt_package_template` namespace.
+
+If you maintain this repository (template author or fork), see [CONTRIBUTING.md](./CONTRIBUTING.md) for tests, linting, and development layout.
 
 <!-- toc -->
 
-- [What This Template Includes](#what-this-template-includes)
+- [Installation](#installation)
 - [Requirements](#requirements)
 - [Supported warehouses](#supported-warehouses)
-- [Repository Layout](#repository-layout)
-- [Starter Macro](#starter-macro)
-  - [`normalize_text`](#normalize_text)
-- [Testing](#testing)
-- [Codex](#codex)
+- [What is in this package](#what-is-in-this-package)
+- [Macros](#macros)
+  * [`normalize_text`](#normalize_text)
 
 <!-- tocstop -->
 
-## What This Template Includes
+## Installation
 
-- A guided starter macro under [`macros/`](./macros)
-- A local integration test project under [`integration_tests/`](./integration_tests)
-- Unit and integration test commands that run against `postgres` and `duckdb`
-- Standard dbt-core coverage for `dbt-core-1-10` and `dbt-core-1-11`
-- A restored `dbt Fusion` lane that runs on the same `postgres` and `duckdb` contract
-- Shared agent configuration for Codex and Claude-based workflows
+In your **root** dbt project, add a [package](https://docs.getdbt.com/docs/build/packages) entry. For example, to install from Git (replace `YOUR_ORG` / `YOUR_REPO` with your fork or published copy):
+
+```yaml
+packages:
+  - git: "https://github.com/YOUR_ORG/YOUR_REPO.git"
+    revision: main # or a tag / SHA
+```
+
+Then run:
+
+```bash
+dbt deps
+```
+
+Published **dbt Hub** or **private registry** installs follow the same pattern using the URL or package name your registry provides.
 
 ## Requirements
 
-- dbt-core 1.10 and 1.11 for the bundled standard test harness
-- Docker with Compose support for the Postgres test target
-- DuckDB for the embedded DuckDB test target
+- **dbt Core** **1.10 or newer** (see `require-dbt-version` in this package’s [`dbt_project.yml`](./dbt_project.yml)).
+- Your project should use an adapter this package is exercised against: **Postgres** or **DuckDB** (see [Supported warehouses](#supported-warehouses)). Other adapters may work if SQL is portable, but are not covered by this package’s test harness.
+
+Developing the package locally (tests, Docker, `uv`, pre-commit) is documented in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Supported warehouses
 
-The template executes tests against:
+This package is tested on:
 
 - Postgres
 - DuckDB
 
-## Repository Layout
+## What is in this package
 
-- [`macros/`](./macros): package macros that ship with the template
-- [`integration_tests/`](./integration_tests): example dbt project used for unit and integration tests
-- [`docs/`](./docs): starter documentation for contributors and agents
+- **Macros** under [`macros/`](./macros), including the starter [`normalize_text`](./macros/example/normalize_text.sql) implementation.
+- **Macro documentation** for **dbt docs** in [`macros/properties.yml`](./macros/properties.yml) (surfaced when your project runs `dbt docs generate` and includes this package).
 
-## Starter Macro
+## Macros
 
 ### `normalize_text`
 
-`normalize_text(expression)` returns a SQL expression that:
+`normalize_text(expression)` returns a **SQL expression** (fragment) that:
 
 - casts the value to the adapter string type
 - lowercases it
 - trims surrounding whitespace
 - converts empty strings to `null`
 
-The macro uses dbt’s `adapter.dispatch` with namespace `dbt_package_template`, so root projects can override the implementation via `dispatch` in `dbt_project.yml` ([dispatch docs](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch?version=1.12)).
-
-Macro metadata for `dbt docs` is defined in [`macros/properties.yml`](./macros/properties.yml).
-
-**Usage:**
+**Example** (in a model or analysis):
 
 ```sql
 select
   {{ dbt_package_template.normalize_text("customer_name") }} as normalized_name
-from {{ ref("raw_users") }}
+from {{ ref("my_customers") }}
 ```
 
-See [`integration_tests/models/example/stg_users.sql`](./integration_tests/models/example/stg_users.sql) for a complete example.
+Use any column or SQL expression in place of `"customer_name"` (quoted identifiers are Jinja string arguments to the macro, not literal SQL quotes around the column).
 
-## Testing
-
-Use the integration test project for all package checks:
-
-```bash
-make setup-integration-tests
-make run-unit-tests
-make run-integration-tests
-make run-fusion-tests
-```
-
-The unit-test harness runs dbt macros directly with `dbt run-operation`.
-The integration harness runs `dbt build` against the sample project on both adapters.
-Postgres-backed local tests start and stop a Docker Compose managed Postgres container automatically.
-
-The repository has two testing lanes:
-
-- Local adapter lane: runnable on `postgres` and `duckdb` for `dbt-core-1-10` and `dbt-core-1-11`
-- Fusion lane: runnable on the same `postgres` and `duckdb` profiles, with the Fusion runtime installed into each nox virtual environment
-
-Set `DBT_FUSION_VERSION` to pin a specific Fusion build during local runs or in CI.
-
-Fusion was originally removed during the migration from a BigQuery-oriented package harness to the new local `postgres`/`duckdb` contract. It is now restored as a real execution lane on that same adapter contract.
-
-For a starter walkthrough, see [docs/starter_walkthrough.md](./docs/starter_walkthrough.md).
-
-## Codex
-
-This repository includes shared Codex configuration in [`.codex/config.toml`](./.codex/config.toml) and project instructions in [`AGENTS.md`](./AGENTS.md).
-
-These files provide a safe default sandbox, approval behavior, editor links for Cursor, and repository-specific guidance for testing and documentation updates.
-
-The checked-in top-level configuration remains the default. For Codex CLI usage, the repository also defines two opt-in profiles:
-
-- `fast`: `gpt-5.4` with low reasoning effort for smaller, iterative tasks
-- `deep`: `gpt-5.4` with high reasoning effort for planning, review, and more complex changes
-
-The repository also includes two read-only review subagents for Codex:
-
-- `reviewer`: reviews dbt macros, SQL generation paths, workflows, and config changes for regressions and correctness risks
-- `test_gap_checker`: reviews changes for missing unit, integration, and workflow coverage
-
-Shared agent skills should be authored under [`.claude/skills`](./.claude/skills). [`.agents/skills`](./.agents/skills) is a compatibility symlink for other agent tooling and should not contain separate copies.
-
-Example usage:
-
-```bash
-codex --profile fast
-codex --profile deep
-```
+For **overriding** dispatched macros and how **dbt docs** surfaces macro metadata from this package, see [CONTRIBUTING.md — Downstream projects: overrides and dbt docs](./CONTRIBUTING.md#downstream-projects-overrides-and-dbt-docs).

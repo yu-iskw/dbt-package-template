@@ -1,6 +1,6 @@
 # Claude / AI assistant notes
 
-In **Claude Code**, macro-package work can be delegated to the project subagent [`dbt-macro-package-specialist`](.claude/agents/dbt-macro-package-specialist.md) (preloads `implement-dbt-macro`, `implement-dbt-macro-unit-test`, and `implement-dbt-package-feature`); restart the session or use `/agents` after changing agent files ([subagents](https://code.claude.com/docs/en/sub-agents)).
+In **Claude Code**, macro-package work can be delegated to the project subagent [`dbt-macro-package-specialist`](.claude/agents/dbt-macro-package-specialist.md) (preloads `implement-dbt-macro`, `implement-dbt-macro-unit-test`, and `implement-dbt-package-feature`). For **lint plus tests** (`make lint`, then unit/integration tests), use [`verifier`](.claude/agents/verifier.md) (preloads `lint-and-fix`, `test-and-fix`). Restart the session or use `/agents` after changing agent files ([subagents](https://code.claude.com/docs/en/sub-agents)).
 
 After copying this template into a new repo, use the agent skill [`.claude/skills/initialize-dbt-package/SKILL.md`](.claude/skills/initialize-dbt-package/SKILL.md) (checklist: [`.claude/skills/initialize-dbt-package/references/init-package-checklist.md`](.claude/skills/initialize-dbt-package/references/init-package-checklist.md)) to rename the package consistently (`dbt_project.yml`, `adapter.dispatch`, Jinja refs, integration project, CI/Docker, docs).
 

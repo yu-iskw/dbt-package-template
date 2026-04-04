@@ -1,53 +1,43 @@
 ---
 name: test-and-fix
-description: Autonomously run tests, analyze failures, and fix them in the `integration_tests` directory.
+description: Autonomously run tests, analyze failures, and fix them for this dbt package template (Postgres and DuckDB, nested integration_tests). Use make run-unit-tests and make run-integration-tests from the repo root unless the user specifies otherwise.
 ---
 
 # Test and Fix
 
 ## Purpose
 
-This skill provides an autonomous loop to identify, analyze, and fix test failures within the `integration_tests` directory using the project's `make` commands.
+This skill provides an autonomous loop to identify, analyze, and fix test failures for **dbt-package-template**: macro-runner unit tests and integration project runs driven from **`integration_tests/`** via root **`make`** targets.
 
 ## Loop Logic
 
-1. **Identify**: Run tests from the `integration_tests` directory.
-    - Agent must make sure what type of test the user wants to run (unit or integration), becaues it takes a long time to run all tests.
-    - `make test`: Runs all unit and integration tests (both dbt-core and dbt-fusion). This is the standard command for a full verification.
-    - `make run-unit-tests`: Runs all unit tests (both core and fusion).
-    - `make run-integration-tests`: Runs all integration tests (both core and fusion).
-    - For targeted debugging, use granular sub-targets:
-        - `make run-unit-tests-core` / `make run-unit-tests-fusion`
-        - `make run-integration-tests-core` / `make run-integration-tests-fusion`
-2. **Analyze**: Examine the test output and logs to understand which tests are failing.
-    - Check the `logs/dbt.log` in `integration_tests/` for detailed dbt execution logs.
-    - For macro failures, inspect the generated SQL and compare it with expected BigQuery syntax.
-    - Note: BigQuery is the only supported warehouse in this repository.
-3. **Plan Fix**: Before applying any fix, create an **MVP scaffold** that delivers the smallest valuable slice of the fix.
-    - Define acceptance criteria for the fix.
-    - Create a plan in memory to track the fix progress.
-4. **Execute & Test**:
-    - Implement the MVP scaffold.
-    - Run the relevant tests immediately (e.g., `cd integration_tests && make run-unit-tests-core`).
-    - Only add details and enhancements after the scaffold tests pass.
-5. **Verify**: Re-run the tests.
-    - If all checks pass: Termination.
-    - If new or remaining failures exist: Analyze the failure and repeat the loop.
+1. **Identify**: Run tests from the **repository root** (not inside `integration_tests/` unless debugging).
+   - Confirm scope with the user when a **full** run is expensive (full suite = several nox sessions and Postgres Docker).
+   - **`make run-unit-tests`** — macro-runner tests on Postgres and DuckDB for dbt-core 1.10 and 1.11.
+   - **`make run-integration-tests`** — `dbt build` for the example project on the same adapters and core lines.
+   - **`make test`** — runs **both** `run-unit-tests` and `run-integration-tests` (full dbt-core lane).
+   - **Fusion** (optional): `make run-unit-tests-fusion`, `make run-integration-tests-fusion`, or **`make run-fusion-tests`** for both Fusion lanes.
+2. **Analyze**: Examine test output and [`integration_tests/logs/dbt.log`](../../../integration_tests/logs/dbt.log) for dbt errors, SQL compile failures, and macro assertion mismatches.
+3. **Plan fix**: Apply the **smallest** change that addresses the failure; prefer fixing package macros, tests, or harness config—not widening scope without cause.
+4. **Execute and re-run**: Re-run the **same** make target that failed until it passes, then broaden (e.g. add `make run-integration-tests` if you only ran unit tests and behavior crosses into models).
+5. **Verify**: If you changed shared behavior, prefer **`make test`** before declaring done (when time permits).
 
 ## Termination Criteria
 
-- All relevant tests exit with code 0 (all checks passed).
-- Reached max iteration limit of 5 attempts.
-- No progress being made (same errors persisting despite fix attempts).
+- Relevant targets exit with code 0.
+- Max iteration limit of **5** attempts per skill loop.
+- No progress: same root error after fixes → stop and report.
 
 ## Examples
 
-### Scenario: Fixing a failing macro unit test
+### Scenario: Failing macro unit test
 
-1. Agent runs `make test` and identifies a failure in `test_macros` for dbt-core.
-2. Agent analyzes the output and finds that `macro_a` is returning incorrect SQL for BigQuery.
-3. Agent creates a plan in memory.
-4. Agent implements a minimal fix for `macro_a` to address the specific failure.
-5. Agent runs `make run-unit-tests-core` to quickly verify the fix.
-6. The test passes. Agent runs `make test` to ensure no regressions across the entire suite.
-7. The test passes. Agent marks the task as complete.
+1. Run `make run-unit-tests` from repo root; note failing macro or assertion.
+2. Inspect [`integration_tests/macros/tests/`](../../../integration_tests/macros/tests/) and package macros under [`macros/`](../../../macros/).
+3. Fix the macro or test; re-run `make run-unit-tests`.
+4. If integration models use the macro, run `make run-integration-tests` as well.
+
+### Scenario: Integration project compile error
+
+1. Run `make run-integration-tests`; read `integration_tests/logs/dbt.log`.
+2. Fix model/ref/source in `integration_tests/` or package as needed; re-run until green.

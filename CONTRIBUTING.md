@@ -1,19 +1,96 @@
 # Contributing to dbt_package_template
 
-Thank you for your interest in contributing to dbt_package_template!
+This guide is for **package maintainers**, **template authors**, and **contributors** working in this repository. It also documents **downstream** topics—**dispatch overrides** and **dbt docs** metadata—for projects that depend on this package. For **installation** and a **minimal macro example**, start with [README.md](README.md).
+
+Thank you for helping improve dbt_package_template.
 
 ## Before you start
 
 This repository is a starter template for new dbt packages.
-It is intentionally small, so contributors should keep changes focused and preserve the local-first workflow.
+Keep changes focused and preserve the local-first workflow.
+
+**User-facing** install and macro documentation: [README.md](README.md).
+
+## Downstream projects: overrides and dbt docs
+
+These notes apply to **root dbt projects** that list this repository (or a fork) under `packages:` and run `dbt deps`.
+
+### Overriding macro implementations
+
+Public macros use dbt’s **`adapter.dispatch`** with namespace **`dbt_package_template`**. In your **root** project you can override implementations with `dispatch` and `search_order` in `dbt_project.yml` ([dispatch docs](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch?version=1.12)).
+
+### dbt docs
+
+Macro descriptions and arguments are defined in [`macros/properties.yml`](macros/properties.yml). After `dbt deps`, generate your project’s docs as usual; macro pages reflect this metadata.
+
+**Maintainers** run **lint** and **tests** from the repository root (Postgres and DuckDB, dbt-core 1.10 and 1.11, optional Fusion lanes); see [How to develop](#how-to-develop) and [Test harness and Fusion](#test-harness-and-fusion). Workspace rules for agents: [`AGENTS.md`](AGENTS.md). **Claude Code** workflow: [`CLAUDE.md`](CLAUDE.md).
+
+## Development layout and tooling
+
+### Repository map
+
+Paths you touch most often when developing the package:
+
+- **`macros/`** — shipped package macros.
+- **[`macros/properties.yml`](macros/properties.yml)** — dbt docs metadata for public macros (see [`macros/CLAUDE.md`](macros/CLAUDE.md)).
+- **`models/`**, **`seeds/`**, **`snapshots/`** — placeholders for a full package layout (see root [`dbt_project.yml`](dbt_project.yml)).
+- **[`integration_tests/`](integration_tests/)** — nested dbt project for macro-runner unit tests and integration `dbt build` (`uv`, `nox`, Postgres + DuckDB). Details: [`integration_tests/README.md`](integration_tests/README.md).
+- **[`docs/`](docs/)** — maintainer walkthroughs and extra docs (for example [`docs/starter_walkthrough.md`](docs/starter_walkthrough.md)).
+- **[`.claude/skills/`](.claude/skills/)**, **[`.claude/agents/`](.claude/agents/)** — Claude Code skills and subagents.
+- **[`.codex/`](.codex/)** — Codex CLI configuration.
+- **[`AGENTS.md`](AGENTS.md)** — workspace rules and agent documentation map (Cursor and other tools).
+- **[`CLAUDE.md`](CLAUDE.md)** — Claude Code–specific workflow and links into macro/test conventions.
+
+**`.agents/skills`** is a symlink to **`../.claude/skills/`** for tools that expect that path—do not maintain duplicate skill trees.
+
+### AI assistants and editor tooling
+
+**Codex** — Shared configuration in [`.codex/config.toml`](.codex/config.toml); project instructions also align with [`AGENTS.md`](AGENTS.md) (sandbox, approvals, Cursor-style workflow).
+
+Opt-in Codex CLI profiles:
+
+- `fast`: `gpt-5.4` with low reasoning effort for smaller, iterative tasks
+- `deep`: `gpt-5.4` with high reasoning effort for planning, review, and more complex changes
+
+Read-only review subagents for Codex:
+
+- `reviewer` — macros, SQL generation paths, workflows, and config regressions
+- `test_gap_checker` — missing unit, integration, and workflow coverage
+
+```bash
+codex --profile fast
+codex --profile deep
+```
+
+**Claude Code** — See [`CLAUDE.md`](CLAUDE.md) for subagents (for example `dbt-macro-package-specialist`, `verifier`), the package-rename skill, and macro/integration pointers.
+
+### Test harness and Fusion
+
+From the **repository root**, typical flows:
+
+```bash
+make setup-integration-tests
+make lint
+make run-unit-tests
+make run-integration-tests
+make run-fusion-tests
+```
+
+- **dbt Core lane:** Postgres and DuckDB, `dbt-core-1-10` and `dbt-core-1-11` (via `nox` in `integration_tests/`).
+- **Fusion lane:** same adapter contract; install Fusion into the nox environment. Set **`DBT_FUSION_VERSION`** to pin a build (see [`integration_tests/README.md`](integration_tests/README.md)).
+
+`make run-fusion-tests` runs **both** Fusion unit and Fusion integration targets; you can also call `make run-unit-tests-fusion` or `make run-integration-tests-fusion` separately.
+
+Fusion was removed during an earlier BigQuery-oriented harness migration and **restored** as a real lane on the current Postgres/DuckDB contract.
 
 ## How to develop
 
-### Directory structure
+### Prerequisites
 
-- `macros/`: package macros that ship with the template
-- `integration_tests/`: example dbt project for unit and integration tests
-- `docs/`: supporting documentation for package authors and agents
+- **Docker Engine** and **Docker Compose v2** (Postgres-backed local tests start a Compose-managed container).
+- **[uv](https://docs.astral.sh/uv/)** — the harness under `integration_tests/` uses `uv sync` and `uv run nox ...`.
+- **Python** — `integration_tests/pyproject.toml` requires Python `>=3.10`. CI runs **3.10**, **3.11**, and **3.12**. Local `make` targets invoke nox sessions named with **3.12**; use a compatible interpreter or rely on `uv` to provision one.
+- **pre-commit** — install separately (for example `pip install pre-commit` or `pipx install pre-commit`) to run `make lint` from the repo root. There is no root `pyproject.toml` for dev tools.
 
 ### How to set up the development environment
 
@@ -22,6 +99,18 @@ Install the integration test environment from the repository root:
 ```shell
 make setup-integration-tests
 ```
+
+That runs `uv sync` in `integration_tests/`.
+
+### Linting
+
+From the repository root (with **pre-commit** on your `PATH`):
+
+```shell
+make lint
+```
+
+This runs `pre-commit run -a` (YAML, shell scripts, markdown link check, and other hooks in [`.pre-commit-config.yaml`](.pre-commit-config.yaml)). CI runs the same checks on pull requests.
 
 ### How to run unit testing
 
@@ -63,6 +152,12 @@ make run-integration-tests-fusion
 
 That target installs the Fusion runtime into the nox virtual environment and runs the Fusion integration lane on Postgres and DuckDB.
 
+Convenience target from the repository root (runs **both** Fusion unit and Fusion integration lanes):
+
+```shell
+make run-fusion-tests
+```
+
 ### Local Postgres
 
 The Postgres target uses a Docker Compose managed container during local test runs.
@@ -83,5 +178,7 @@ You can override any of them with `DBT_POSTGRES_*` environment variables.
 
 - Keep starter content copyable for new package authors.
 - Prefer cross-adapter SQL in starter macros and tests.
-- Implement public package macros with `adapter.dispatch` and `macro_namespace: 'dbt_package_template'` so downstream projects can override implementations (see `macros/CLAUDE.md`).
-- Update `README.md` and `docs/` when public behavior changes.
+- Implement public package macros with `adapter.dispatch` and `macro_namespace: 'dbt_package_template'` so downstream projects can override implementations (see [`macros/CLAUDE.md`](macros/CLAUDE.md)).
+- When you add or change a **public** macro, update [`macros/properties.yml`](macros/properties.yml) so **dbt docs** stay accurate (dispatcher name and arguments; see [Document macros](https://docs.getdbt.com/faqs/Docs/documenting-macros?version=1.12)).
+- Macro unit tests mirror the package tree under `integration_tests/macros/tests/` (see [`integration_tests/CLAUDE.md`](integration_tests/CLAUDE.md)).
+- Update [README.md](README.md) for **consumer-facing** behavior and **`docs/`** as needed; see [docs/starter_walkthrough.md](docs/starter_walkthrough.md) for a maintainer-oriented tour of the harness.
