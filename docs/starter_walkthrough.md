@@ -15,7 +15,7 @@ It returns a SQL expression that:
 
 ## Unit tests
 
-Macro unit tests live under `integration_tests/macros/tests/`.
+Macro unit tests live under `integration_tests/macros/tests/`, **mirroring** the package macro tree (for example `macros/example/normalize_text.sql` pairs with `integration_tests/macros/tests/example/test_normalize_text.sql`). The `dbt run-operation` entry macro stays at `integration_tests/macros/tests/test_macros.sql`.
 
 The test runner:
 

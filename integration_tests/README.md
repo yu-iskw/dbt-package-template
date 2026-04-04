@@ -48,6 +48,7 @@ make -C integration_tests postgres-logs
 ```
 
 The unit-test harness runs `dbt run-operation test_macros`.
+Macro test files mirror `macros/` under `macros/tests/` (for example `macros/tests/example/test_normalize_text.sql`).
 The integration harness runs `dbt build` against the example project.
 
 ## Fusion lane

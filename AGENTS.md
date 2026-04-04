@@ -6,6 +6,12 @@
 - The supported execution adapters are Postgres and DuckDB.
 - Prefer minimal, focused changes that keep the starter template easy to understand and copy.
 
+## Agent documentation map
+
+- Read [`CLAUDE.md`](CLAUDE.md) for Claude Code–specific notes (subagents, `initialize-dbt-package` skill) and for the same macro and integration pointers in prose form.
+- When changing or adding **package macros**, read [`macros/CLAUDE.md`](macros/CLAUDE.md) for folder layout, `adapter.dispatch` / `macro_namespace`, and [`macros/properties.yml`](macros/properties.yml) for **dbt docs** metadata.
+- When changing **macro unit tests** or the integration harness layout, read [`integration_tests/CLAUDE.md`](integration_tests/CLAUDE.md) for mirroring `macros/` → `macros/tests/`, `test_` naming, and the `test_macros.sql` exception.
+
 ## Working Rules
 
 - Read the nearest `README.md`, relevant macro files, and existing tests before editing behavior.

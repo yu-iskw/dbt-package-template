@@ -54,6 +54,10 @@ The template executes tests against:
 - trims surrounding whitespace
 - converts empty strings to `null`
 
+The macro uses dbt’s `adapter.dispatch` with namespace `dbt_package_template`, so root projects can override the implementation via `dispatch` in `dbt_project.yml` ([dispatch docs](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch?version=1.12)).
+
+Macro metadata for `dbt docs` is defined in [`macros/properties.yml`](./macros/properties.yml).
+
 **Usage:**
 
 ```sql

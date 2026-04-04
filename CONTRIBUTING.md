@@ -42,10 +42,10 @@ That target installs the Fusion runtime into the nox virtual environment and run
 ### How to implement unit tests
 
 - Add or update package macros under `macros/`.
-- Add matching macro tests under `integration_tests/macros/tests/`.
+- Add matching macro tests under `integration_tests/macros/tests/`, **mirroring** the directory layout under `macros/` (for example `macros/example/foo.sql` → `integration_tests/macros/tests/example/test_foo.sql`).
 - Use [dbt-unittest](https://github.com/yu-iskw/dbt-unittest) (`dbt_unittest.*`) for assertions.
 - Call package macros directly in SQL (for example `{{ dbt_package_template.normalize_text("'x'") }}`) and use dbt’s `run_query` when you need to execute that SQL and assert on the result.
-- Register new test macros from `integration_tests/macros/tests/test_macros.sql`.
+- Register new test macros from `integration_tests/macros/tests/test_macros.sql` (the only test macro file that stays at the `tests/` root).
 
 ### How to run integration testing
 
@@ -83,4 +83,5 @@ You can override any of them with `DBT_POSTGRES_*` environment variables.
 
 - Keep starter content copyable for new package authors.
 - Prefer cross-adapter SQL in starter macros and tests.
+- Implement public package macros with `adapter.dispatch` and `macro_namespace: 'dbt_package_template'` so downstream projects can override implementations (see `macros/CLAUDE.md`).
 - Update `README.md` and `docs/` when public behavior changes.
