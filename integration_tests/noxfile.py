@@ -1,182 +1,154 @@
-import nox
+from pathlib import Path
 import os
-import json
-from contextlib import contextmanager
 
-# Nox options
-nox.options.sessions = ["dev_unit_tests"]
+import nox
+
+nox.options.sessions = ["dev_unit_tests", "dev_integration_tests"]
 nox.options.default_venv_backend = "uv"
 
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
-DBT_GROUP_MAP = {
-    "dbt-fusion": {
-        "version": "fusion",
-        "description": "dbt Fusion",
-    },
-    "dbt-core-1-10": {
-        "version": "1.10",
-        "description": "dbt-core v1.10",
-    },
-    "dbt-core-1-11": {
-        "version": "1.11",
-        "description": "dbt-core v1.11",
-    },
-}
+LOCAL_DBT_GROUPS = ["dbt-core-1-10", "dbt-core-1-11"]
+SETUP_DBT_GROUPS = ["dbt-core-1-10", "dbt-core-1-11", "dbt-fusion"]
+ADAPTERS = ["postgres", "duckdb"]
+INTEGRATION_TESTS_DIR = Path(__file__).parent.resolve()
+FUSION_GROUP = "dbt-fusion"
+FUSION_BINARY_NAME = "dbt"
+FUSION_VERSION = os.environ.get("DBT_FUSION_VERSION", "")
 
-def get_dataset_name(session, dbt_version):
-    """Generate a unique BigQuery dataset name for the session."""
-    py_ver = session.python.replace(".", "")
-    dbt_ver = dbt_version.replace(".", "")
-    # Add a suffix if running in CI to avoid any possible collisions
-    suffix = os.environ.get("GITHUB_RUN_ID", "")
-    if suffix:
-        return f"dbt_dp_py{py_ver}_dbt{dbt_ver}_{suffix}"
-    return f"dbt_dp_py{py_ver}_dbt{dbt_ver}"
 
-def run_deps(session, env):
-    """Install dbt dependencies."""
-    session.log("Installing dbt dependencies")
-    session.run(
-        "dbt", "deps",
-        "--profiles-dir", "profiles",
-        "--target", "bigquery",
-        env=env,
-        external=True
-    )
-
-def run_cleanup(session, dataset_name, vars_path):
-    """Drop the temporary dataset."""
-    session.log(f"Cleaning up dataset: {dataset_name}")
-
-    with open(vars_path, "r", encoding="utf-8") as f:
-        if vars_path.endswith(".json"):
-            vars_content = json.dumps(json.load(f))
-        else:
-            vars_content = f.read()
-
-    session.run(
-        "dbt", "run-operation", "drop_dataset",
-        "--profiles-dir", "profiles",
-        "--target", "bigquery",
-        "--vars", vars_content,
-        env={"DBT_DATASET": dataset_name},
-        external=True
-    )
-
-@contextmanager
-def dbt_test_env(session, uv_group):
-    """Context manager to setup and cleanup dbt test environment."""
-    if uv_group not in DBT_GROUP_MAP:
-        session.error(f"Unsupported dbt group: {uv_group}")
-
-    version_info = DBT_GROUP_MAP[uv_group]
-    dbt_version = version_info["version"]
-
-    # Install the project and the requested group
+def install_dependencies(session, uv_group):
     session.install(".", "--group", uv_group)
-
-    if uv_group == "dbt-fusion":
-        session.log("Installing dbt Fusion binary")
+    if uv_group == FUSION_GROUP:
         session.run(
-            "bash", "-c",
-            f"curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | bash -s -- --to {session.bin} --update",
-            external=True
+            "bash",
+            "scripts/ensure_fusion_backend.sh",
+            "--install-runtime",
+            "--verify-runtime",
+            env={
+                "DBT_FUSION_BIN_DIR": session.bin,
+                "DBT_FUSION_BINARY_NAME": FUSION_BINARY_NAME,
+                "DBT_FUSION_VERSION": FUSION_VERSION,
+            },
+            external=True,
         )
 
-    dataset_name = get_dataset_name(session, dbt_version)
-    env = {"DBT_DATASET": dataset_name}
 
-    run_deps(session, env)
+def get_dbt_command(session, uv_group):
+    if uv_group == FUSION_GROUP:
+        return str(Path(session.bin) / FUSION_BINARY_NAME)
+    return "dbt"
 
-    vars_path = "resources/vars/vars-bigquery.basic.json"
-    try:
-        yield {"env": env, "vars_path": vars_path}
-    finally:
-        run_cleanup(session, dataset_name, vars_path)
+
+def build_env(session, uv_group, adapter, dbt_cmd):
+    env = dict(os.environ)
+    env.update(session.env)
+    env["DBT_CMD"] = dbt_cmd
+
+    if adapter == "duckdb" and "DBT_DUCKDB_PATH" not in env:
+        duckdb_dir = INTEGRATION_TESTS_DIR / "target"
+        duckdb_dir.mkdir(exist_ok=True)
+        py_ver = session.python.replace(".", "")
+        env["DBT_DUCKDB_PATH"] = str(
+            duckdb_dir / f"dbt_package_template_{uv_group}_{py_ver}.duckdb"
+        )
+
+    return env
+
+
+def run_deps(session, dbt_cmd, adapter, env):
+    session.run(
+        dbt_cmd,
+        "deps",
+        "--profiles-dir",
+        "profiles",
+        "--target",
+        adapter,
+        env=env,
+        external=True,
+    )
+
 
 @nox.session(python="3.12")
 def dev_unit_tests(session):
-    """Quickly run unit tests with the latest versions."""
-    latest_group = list(DBT_GROUP_MAP.keys())[-1]
-    unit_tests(session, latest_group)
+    """Run the starter macro unit tests quickly on Postgres."""
+    unit_tests(session, "dbt-core-1-10", "postgres")
+
 
 @nox.session(python="3.12")
 def dev_integration_tests(session):
-    """Quickly run integration tests with the latest versions."""
-    latest_group = list(DBT_GROUP_MAP.keys())[-1]
-    integration_tests(session, latest_group)
+    """Run the starter integration tests quickly on Postgres."""
+    integration_tests(session, "dbt-core-1-10", "postgres")
+
+
+@nox.session(python="3.12")
+def dev_unit_tests_fusion(session):
+    """Run the starter macro unit tests quickly through dbt Fusion."""
+    fusion_unit_tests(session)
+
+
+@nox.session(python="3.12")
+def dev_integration_tests_fusion(session):
+    """Run the starter integration tests quickly through dbt Fusion."""
+    fusion_integration_tests(session)
+
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("uv_group", list(DBT_GROUP_MAP.keys()))
-def unit_tests(session, uv_group):
-    """Run unit tests with specified dbt-core version group."""
-    with dbt_test_env(session, uv_group) as test_env:
-        session.run(
-            "bash", "run_unit_tests.sh",
-            "--target", "bigquery",
-            "--vars-path", test_env["vars_path"],
-            env=test_env["env"],
-            external=True
-        )
+@nox.parametrize("uv_group", LOCAL_DBT_GROUPS)
+@nox.parametrize("adapter", ADAPTERS)
+def unit_tests(session, uv_group, adapter):
+    """Run macro unit tests for a dbt-core line and adapter."""
+    install_dependencies(session, uv_group)
+    dbt_cmd = get_dbt_command(session, uv_group)
+    env = build_env(session, uv_group, adapter, dbt_cmd)
+    run_deps(session, dbt_cmd, adapter, env)
+    session.run(
+        "bash",
+        "run_unit_tests.sh",
+        "--target",
+        adapter,
+        env=env,
+        external=True,
+    )
+
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("uv_group", list(DBT_GROUP_MAP.keys()))
-def integration_tests(session, uv_group):
-    """Run integration tests with specified dbt-core version group."""
-    with dbt_test_env(session, uv_group) as test_env:
-        env = test_env["env"]
-        vars_path = test_env["vars_path"]
+@nox.parametrize("uv_group", LOCAL_DBT_GROUPS)
+@nox.parametrize("adapter", ADAPTERS)
+def integration_tests(session, uv_group, adapter):
+    """Run dbt build for the example project for a dbt-core line and adapter."""
+    install_dependencies(session, uv_group)
+    dbt_cmd = get_dbt_command(session, uv_group)
+    env = build_env(session, uv_group, adapter, dbt_cmd)
+    run_deps(session, dbt_cmd, adapter, env)
+    session.run(
+        "bash",
+        "run_integration_tests.sh",
+        "--target",
+        adapter,
+        env=env,
+        external=True,
+    )
 
-        session.run(
-            "bash", "scripts/generate_secured_models.sh",
-            "--target", "bigquery",
-            "--vars-path", vars_path,
-            "--modern-schema",
-            env=env,
-            external=True
-        )
-        session.run(
-            "bash", "run_integration_tests.sh",
-            "--target", "bigquery",
-            "--vars-path", vars_path,
-            env=env,
-            external=True
-        )
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("uv_group", list(DBT_GROUP_MAP.keys()))
-def generate_models(session, uv_group):
-    """Generate dbt models with specified dbt version group."""
-    with dbt_test_env(session, uv_group) as test_env:
-        session.run(
-            "bash", "scripts/generate_secured_models.sh",
-            "--target", "bigquery",
-            "--vars-path", test_env["vars_path"],
-            "--modern-schema",
-            env=test_env["env"],
-            external=True
-        )
-
-@nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("uv_group", list(DBT_GROUP_MAP.keys()))
+@nox.parametrize("uv_group", SETUP_DBT_GROUPS)
 def setup_dbt_env(session, uv_group):
-    """Setup a virtual environment for a specific dbt version group and output its bin path."""
-    if uv_group not in DBT_GROUP_MAP:
-        session.error(f"Unsupported dbt group: {uv_group}")
-
-    session.install(".", "--group", uv_group)
-
-    if uv_group == "dbt-fusion":
-        session.log("Installing dbt Fusion binary")
-        session.run(
-            "bash", "-c",
-            f"curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | bash -s -- --to {session.bin} --update",
-            external=True
-        )
-
+    """Install dbt dependencies for a version group and print the bin path."""
+    install_dependencies(session, uv_group)
+    dbt_cmd = get_dbt_command(session, uv_group)
+    print(f"DBT_CMD={dbt_cmd}")
     print(f"BIN_PATH={session.bin}")
 
+
 @nox.session(python=PYTHON_VERSIONS)
-def dbt_fusion_tests(session):
-    """Run unit tests with dbt Fusion."""
-    unit_tests(session, "dbt-fusion")
+def fusion_unit_tests(session):
+    """Run real Fusion unit tests on Postgres and DuckDB."""
+    for adapter in ADAPTERS:
+        unit_tests(session, FUSION_GROUP, adapter)
+
+
+@nox.session(python=PYTHON_VERSIONS)
+def fusion_integration_tests(session):
+    """Run real Fusion integration tests on Postgres and DuckDB."""
+    for adapter in ADAPTERS:
+        integration_tests(session, FUSION_GROUP, adapter)

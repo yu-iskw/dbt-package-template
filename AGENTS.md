@@ -2,9 +2,9 @@
 
 ## Repository Overview
 
-- This repository is a dbt package for privacy-protecting transformations and macros.
-- BigQuery is the only supported warehouse today.
-- Prefer minimal, focused changes that preserve existing macro behavior and test coverage.
+- This repository is a dbt package template for reusable macros and tests.
+- The supported execution adapters are Postgres and DuckDB.
+- Prefer minimal, focused changes that keep the starter template easy to understand and copy.
 
 ## Working Rules
 
@@ -17,7 +17,7 @@
 
 - Run tests from the `integration_tests` directory.
 - For most code changes, run `make run-unit-tests`.
-- When behavior changes affect generated SQL or dbt execution flows, also run `make run-integration-tests` when the environment is available.
+- When behavior changes affect generated SQL or dbt execution flows, also run `make run-integration-tests`.
 
 ## Repository-Specific Notes
 

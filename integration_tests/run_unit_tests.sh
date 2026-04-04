@@ -1,31 +1,30 @@
-#!/bin/bash
-set -ex
+#!/usr/bin/env bash
+set -euo pipefail
 
-
-# Constants
-INTEGRATION_TESTS_DIR="$(dirname "$(readlink -f "$0")")"
-
-# Default values
+INTEGRATION_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dbt_profiles_dir="${INTEGRATION_TESTS_DIR}/profiles"
+dbt_target="${DBT_TARGET:-postgres}"
+dbt_cmd="${DBT_CMD:-dbt}"
 
-# Parse options and arguments
 while (($# > 0)); do
-  if [[ "$1" == "--profiles-dir" ]]; then
-    dbt_profiles_dir="${2}"
-    shift 2
-  elif [[ "$1" == "--target" ]]; then
-    dbt_target="${2}"
-    shift 2
-  elif [[ "$1" == "--vars-path" ]]; then
-    vars_path="${2}"
-    shift 2
-  fi
+  case "$1" in
+    --profiles-dir)
+      dbt_profiles_dir="${2:?}"
+      shift 2
+      ;;
+    --target)
+      dbt_target="${2:?}"
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
 done
 
-dbt deps --profiles-dir "${INTEGRATION_TESTS_DIR}/profiles" --target "${dbt_target:?}"
-
-# Unit tests
-dbt run-operation test_macros \
-    --profiles-dir "${dbt_profiles_dir}" \
-    --target "${dbt_target:?}" \
-    --vars "$(if [[ "${vars_path:?}" == *.json ]]; then cat "${vars_path}" | jq -c .; else cat "${vars_path}"; fi)"
+cd "${INTEGRATION_TESTS_DIR}"
+"${dbt_cmd}" deps --profiles-dir "${dbt_profiles_dir}" --target "${dbt_target}"
+"${dbt_cmd}" run-operation test_macros \
+  --profiles-dir "${dbt_profiles_dir}" \
+  --target "${dbt_target}"

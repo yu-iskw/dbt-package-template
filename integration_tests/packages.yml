@@ -1,2 +1,4 @@
 packages:
-    - local: ../
+  - local: ../
+  - package: yu-iskw/dbt_unittest
+    version: 0.5.0

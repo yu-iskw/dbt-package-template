@@ -5,7 +5,7 @@ generate-toc:
 	markdown-toc --maxdepth 5 -i README.md
 
 ######################################################################
-# Integration Tests
+# Integration tests
 ######################################################################
 setup-integration-tests:
 	$(MAKE) -C integration_tests setup
@@ -13,19 +13,19 @@ setup-integration-tests:
 run-unit-tests:
 	$(MAKE) -C integration_tests run-unit-tests
 
-generate-models:
-	$(MAKE) -C integration_tests generate
-
-generate-models-legacy:
-	$(MAKE) -C integration_tests generate-legacy
+run-unit-tests-fusion:
+	$(MAKE) -C integration_tests run-unit-tests-fusion
 
 run-integration-tests:
 	$(MAKE) -C integration_tests run-integration-tests
 
-run-integration-tests-legacy:
-	$(MAKE) -C integration_tests run-integration-tests-legacy
+run-integration-tests-fusion:
+	$(MAKE) -C integration_tests run-integration-tests-fusion
+
+run-fusion-tests:
+	$(MAKE) -C integration_tests run-fusion-tests
 
 test-integration:
-	$(MAKE) -C integration_tests test-integration
+	$(MAKE) -C integration_tests test
 
-test: run-unit-tests test-integration
+test: run-unit-tests run-integration-tests

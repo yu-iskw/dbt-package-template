@@ -1,4 +1,2 @@
-# The '.gitignore' file enables us to ignore generated files by dbt-data-privacy locally.
-# Meanwhile, by removing this file, we can test commiting generaed files easily.
-
-data_analysis_layer/
+# Ignore temporary backup files created while editing example models locally.
+*.sql.bak

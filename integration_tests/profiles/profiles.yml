@@ -1,13 +1,17 @@
 default:
-  target: bigquery
+  target: postgres
   outputs:
-    bigquery:
-      type: bigquery
-      method: oauth
-      project: "ubie-oss-data-engineering"
-      dataset: "{{ env_var('DBT_DATASET', 'dbt_data_privacy') }}"
-      priority: "{{ env_var('DBT_BIGQUERY_PRIORITY', 'interactive') }}"
-      threads: |
-        {{ env_var("DBT_THREADS", 10) | as_number }}
-      location: "US"
-      impersonate_service_account: "dbt-data-privacy@ubie-oss-data-engineering.iam.gserviceaccount.com"
+    postgres:
+      type: postgres
+      host: "{{ env_var('DBT_POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_POSTGRES_PORT', '5432') | as_number }}"
+      user: "{{ env_var('DBT_POSTGRES_USER', 'postgres') }}"
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD', 'postgres') }}"
+      dbname: "{{ env_var('DBT_POSTGRES_DATABASE', 'dbt_package_template') }}"
+      schema: "{{ env_var('DBT_POSTGRES_SCHEMA', 'dbt_package_template') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | as_number }}"
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'integration_tests.duckdb') }}"
+      schema: "{{ env_var('DBT_DUCKDB_SCHEMA', 'dbt_package_template') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | as_number }}"
