@@ -1,29 +1,14 @@
 #!/usr/bin/env bash
+# Variables dbt_cmd, dbt_profiles_dir, dbt_target are set in scripts/dbt_harness.sh.
+# shellcheck disable=SC1091,SC2154
 set -euo pipefail
 
-INTEGRATION_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-dbt_profiles_dir="${INTEGRATION_TESTS_DIR}/profiles"
-dbt_target="${DBT_TARGET:-postgres}"
-dbt_cmd="${DBT_CMD:-dbt}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${ROOT}/scripts/dbt_harness.sh"
 
-while (($# > 0)); do
-  case "$1" in
-    --profiles-dir)
-      dbt_profiles_dir="${2:?}"
-      shift 2
-      ;;
-    --target)
-      dbt_target="${2:?}"
-      shift 2
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      exit 1
-      ;;
-  esac
-done
+dbt_harness_parse_args "$@"
+dbt_harness_cd
 
-cd "${INTEGRATION_TESTS_DIR}"
 "${dbt_cmd}" deps --profiles-dir "${dbt_profiles_dir}" --target "${dbt_target}"
 "${dbt_cmd}" run-operation test_macros \
   --profiles-dir "${dbt_profiles_dir}" \

@@ -13,7 +13,7 @@ You are the **dbt macro package specialist** for this repository: a Postgres/Duc
 
 ## Read first (as relevant)
 
-- [`AGENTS.md`](../../AGENTS.md) — testing commands and repo rules
+- [`CONTRIBUTING.md`](../../CONTRIBUTING.md) — `make` targets, harness, and maintainer layout; [`AGENTS.md`](../../AGENTS.md) — agent workspace rules
 - [`CLAUDE.md`](../../CLAUDE.md) — index and package notes
 - [`macros/CLAUDE.md`](../../macros/CLAUDE.md) — one file per macro family, `adapter.dispatch`, `macro_namespace`
 - [`integration_tests/CLAUDE.md`](../../integration_tests/CLAUDE.md) — mirror `macros/` under `macros/tests/`, `test_macros.sql` entry

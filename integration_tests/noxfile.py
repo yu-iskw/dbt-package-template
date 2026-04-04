@@ -68,6 +68,22 @@ def run_deps(session, dbt_cmd, adapter, env):
     )
 
 
+def run_dbt_shell_script(session, uv_group, adapter, script_name):
+    """Install deps, then run a bash harness script (unit or integration tests)."""
+    install_dependencies(session, uv_group)
+    dbt_cmd = get_dbt_command(session, uv_group)
+    env = build_env(session, uv_group, adapter, dbt_cmd)
+    run_deps(session, dbt_cmd, adapter, env)
+    session.run(
+        "bash",
+        script_name,
+        "--target",
+        adapter,
+        env=env,
+        external=True,
+    )
+
+
 @nox.session(python="3.12")
 def dev_unit_tests(session):
     """Run the starter macro unit tests quickly on Postgres."""
@@ -97,18 +113,7 @@ def dev_integration_tests_fusion(session):
 @nox.parametrize("adapter", ADAPTERS)
 def unit_tests(session, uv_group, adapter):
     """Run macro unit tests for a dbt-core line and adapter."""
-    install_dependencies(session, uv_group)
-    dbt_cmd = get_dbt_command(session, uv_group)
-    env = build_env(session, uv_group, adapter, dbt_cmd)
-    run_deps(session, dbt_cmd, adapter, env)
-    session.run(
-        "bash",
-        "run_unit_tests.sh",
-        "--target",
-        adapter,
-        env=env,
-        external=True,
-    )
+    run_dbt_shell_script(session, uv_group, adapter, "run_unit_tests.sh")
 
 
 @nox.session(python=PYTHON_VERSIONS)
@@ -116,18 +121,7 @@ def unit_tests(session, uv_group, adapter):
 @nox.parametrize("adapter", ADAPTERS)
 def integration_tests(session, uv_group, adapter):
     """Run dbt build for the example project for a dbt-core line and adapter."""
-    install_dependencies(session, uv_group)
-    dbt_cmd = get_dbt_command(session, uv_group)
-    env = build_env(session, uv_group, adapter, dbt_cmd)
-    run_deps(session, dbt_cmd, adapter, env)
-    session.run(
-        "bash",
-        "run_integration_tests.sh",
-        "--target",
-        adapter,
-        env=env,
-        external=True,
-    )
+    run_dbt_shell_script(session, uv_group, adapter, "run_integration_tests.sh")
 
 
 @nox.session(python=PYTHON_VERSIONS)

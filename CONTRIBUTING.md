@@ -51,11 +51,26 @@ Opt-in Codex CLI profiles:
 
 - `fast`: `gpt-5.4` with low reasoning effort for smaller, iterative tasks
 - `deep`: `gpt-5.4` with high reasoning effort for planning, review, and more complex changes
+- `review`: `gpt-5.4` with high reasoning effort for bug-finding and regression review
+- `verify`: `gpt-5.4` with medium reasoning effort for lint/test orchestration and failure analysis
 
 Read-only review subagents for Codex:
 
 - `reviewer` — macros, SQL generation paths, workflows, and config regressions
 - `test_gap_checker` — missing unit, integration, and workflow coverage
+
+Implementation and verification subagents for Codex:
+
+- `macro_package_specialist` — macro changes, public macro docs, mirrored macro-runner tests, and related package docs
+- `verifier` — `make lint`, targeted dbt verification, and exact command/outcome reporting
+
+Repo-local advisory Codex hook scripts:
+
+- [`.codex/hooks/context_router.sh`](.codex/hooks/context_router.sh) — suggests which repo docs to read for a file area
+- [`.codex/hooks/verification_hint.sh`](.codex/hooks/verification_hint.sh) — suggests the right verification command set for changed paths
+- [`.codex/hooks/check_sandbox_parity.sh`](.codex/hooks/check_sandbox_parity.sh) — reminds maintainers to keep [`.claude/settings.json`](.claude/settings.json), [`.cursor/sandbox.json`](.cursor/sandbox.json), and [`.cursor/rules/sandbox.mdc`](.cursor/rules/sandbox.mdc) aligned
+
+The current repo-local Codex setup supports subagents directly. The scripts above are shipped as deterministic helpers for advisory workflows and future Codex hook wiring rather than a second, duplicate instruction system.
 
 ```bash
 codex --profile fast
