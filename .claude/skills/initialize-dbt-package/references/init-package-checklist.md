@@ -30,11 +30,12 @@ Use this after copying **dbt-package-template** into a new repository. Replace p
 | [`integration_tests/models/**/*.sql`](../../../../integration_tests/models/) | `{{ PACKAGE_SNAKE.... }}` |
 | [`integration_tests/macros/tests/**/*.sql`](../../../../integration_tests/macros/tests/) | Same |
 
-## 4. Lockfile and local package install
+## 4. Local package install and dependency files
 
 | File | Change |
 |------|--------|
-| [`integration_tests/package-lock.yml`](../../../../integration_tests/package-lock.yml) | Under the `local: ../` entry, set `name: PACKAGE_SNAKE`, or delete the lockfile and run `dbt deps` from `integration_tests/` after updating root `dbt_project.yml` |
+| [`integration_tests/packages.yml`](../../../../integration_tests/packages.yml) | Keep the `local: ../` entry pointed at the renamed package root, then run `dbt deps` from `integration_tests/` after updating root `dbt_project.yml` |
+| [`integration_tests/uv.lock`](../../../../integration_tests/uv.lock) | Only refresh if Python dependencies changed; this lockfile does not control dbt package resolution |
 
 ## 5. Profiles, Docker, CI, scripts (defaults)
 

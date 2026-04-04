@@ -28,7 +28,7 @@ Use this skill when someone copies **dbt-package-template** and must make the re
 
 1. Open [references/init-package-checklist.md](references/init-package-checklist.md) and work through sections **in order**.
 2. Edit **macros first** (`adapter.dispatch` second argument), then **SQL** (`{{ PACKAGE_SNAKE.macro(...) }}`), then **YAML** projects, then **profiles / Docker / CI / scripts / noxfile**, then **docs** and **`.claude/skills/**` examples.
-3. Refresh [`integration_tests/package-lock.yml`](../../../integration_tests/package-lock.yml) if needed (`dbt deps` from `integration_tests/` after root `name` is final).
+3. Confirm the local package entry in [`integration_tests/packages.yml`](../../../integration_tests/packages.yml) still points at `local: ../`, then run `dbt deps` from `integration_tests/` after the root `name` is final. Treat [`integration_tests/uv.lock`](../../../integration_tests/uv.lock) separately as Python environment locking, not dbt package resolution.
 4. Run `rg 'dbt_package_template|dbt-package-template'` from the repo root (exclude vendor dirs) and fix stragglers.
 5. Verify with `make run-unit-tests` and `make run-integration-tests` from the repo root ([`AGENTS.md`](../../../AGENTS.md)).
 
