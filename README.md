@@ -4,17 +4,6 @@
 
 If you maintain this repository (template author or fork), see [CONTRIBUTING.md](./CONTRIBUTING.md) for tests, linting, and development layout.
 
-<!-- toc -->
-
-- [Installation](#installation)
-- [Requirements](#requirements)
-- [Supported warehouses](#supported-warehouses)
-- [What is in this package](#what-is-in-this-package)
-- [Macros](#macros)
-  * [`normalize_text`](#normalize_text)
-
-<!-- tocstop -->
-
 ## Installation
 
 In your **root** dbt project, add a [package](https://docs.getdbt.com/docs/build/packages) entry. For example, to install from Git (replace `YOUR_ORG` / `YOUR_REPO` with your fork or published copy):
