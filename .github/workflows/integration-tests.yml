@@ -56,14 +56,10 @@ jobs:
           DBT_POSTGRES_PASSWORD: postgres
           DBT_POSTGRES_DATABASE: dbt_package_template
           DBT_POSTGRES_SCHEMA: dbt_package_template
+          DBT_DUCKDB_PATH: ${{ github.workspace }}/integration_tests/target/ci_${{ github.run_id }}_${{ matrix.python-version }}_${{ matrix.dbt-group }}_${{ matrix.adapter }}.duckdb
         run: |
-          DBT_GROUP_SAFE=$(echo '${{ matrix.dbt-group }}' | tr '-' '_')
-          export DBT_DUCKDB_PATH="${{ github.workspace }}/integration_tests/target/ci_${{ github.run_id }}_${{ matrix.python-version }}_${DBT_GROUP_SAFE}_${{ matrix.adapter }}.duckdb"
           mkdir -p target
           rm -f "${DBT_DUCKDB_PATH}"
-          if [ "${{ matrix.adapter }}" = "duckdb" ]; then
-            uv run --group '${{ matrix.dbt-group }}' python -c "import duckdb, os; duckdb.connect(os.environ['DBT_DUCKDB_PATH']).close()"
-          fi
           uv run nox -s "unit_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
           uv run nox -s "integration_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
 
@@ -124,6 +120,5 @@ jobs:
         run: |
           mkdir -p target
           rm -f "${DBT_DUCKDB_PATH}"
-          uv run --group dbt-core-1-10 python -c "import duckdb, os; duckdb.connect(os.environ['DBT_DUCKDB_PATH']).close()"
           uv run nox -s "fusion_unit_tests-${{ matrix.python-version }}"
           uv run nox -s "fusion_integration_tests-${{ matrix.python-version }}"
