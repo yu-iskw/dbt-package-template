@@ -36,6 +36,7 @@ You are the **CI failure analyzer** for this dbt macro package (Postgres + DuckD
 | Failure only on Python 3.10 | Type annotation or stdlib compatibility |
 | `pre-commit` hook failure | YAML/SQL formatting, trailing whitespace, link rot |
 | `unknown shorthand flag: 'U' in -U` during **Initialize containers** / `docker create` | Postgres **service** `options`: `--health-cmd` must quote the full `pg_isready ...` command so `-U`/`-d` are not parsed as Docker flags |
+| DuckDB `Binder Error: Catalog "…" does not exist!` | Often the **stem** of `DBT_DUCKDB_PATH` becomes the catalog/database name; **hyphens** in the basename (e.g. `dbt-core-1-10`) break unquoted SQL. Sanitize the filename (use underscores) and/or **pre-create** the `.duckdb` file before `dbt build` (CI: two `uv run nox` calls in one step can make an on-disk file easy to miss). |
 
 ## Repo conventions
 

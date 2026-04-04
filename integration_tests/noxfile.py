@@ -48,8 +48,9 @@ def build_env(session, uv_group, adapter, dbt_cmd):
         duckdb_dir = INTEGRATION_TESTS_DIR / "target"
         duckdb_dir.mkdir(exist_ok=True)
         py_ver = session.python.replace(".", "")
+        uv_slug = uv_group.replace("-", "_")
         env["DBT_DUCKDB_PATH"] = str(
-            duckdb_dir / f"dbt_package_template_{uv_group}_{py_ver}.duckdb"
+            duckdb_dir / f"dbt_package_template_{uv_slug}_{py_ver}.duckdb"
         )
 
     return env
