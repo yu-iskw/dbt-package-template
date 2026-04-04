@@ -15,7 +15,7 @@ Common paths:
 - `integration_tests/macros/tests/test_<feature>.sql`
 - `integration_tests/macros/tests/test_macros.sql`
 - `integration_tests/run_unit_tests.sh`
-- `integration_tests/noxfile.py`
+- `integration_tests/noxfile_core.py` / `integration_tests/noxfile_fusion.py`
 
 The nested `integration_tests/` project installs the package locally and provides the test execution context.
 

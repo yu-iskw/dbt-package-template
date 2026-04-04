@@ -1,6 +1,6 @@
 ---
 name: dbt-version-upgrade
-description: Bump supported dbt-core versions in this package—update pyproject.toml dependency groups, noxfile.py session matrix, GitHub Actions CI matrix, and dbt_project.yml requires-dbt-version. Use when adding support for a new dbt-core minor release or dropping an old one.
+description: Bump supported dbt-core versions in this package—update pyproject.toml dependency groups, noxfile_core.py session matrix, GitHub Actions CI matrix, and dbt_project.yml requires-dbt-version. Use when adding support for a new dbt-core minor release or dropping an old one.
 ---
 
 # dbt Version Upgrade
@@ -12,7 +12,7 @@ Bump or drop a dbt-core version across all four locations where it is pinned.
 | File | What to update |
 | --- | --- |
 | `integration_tests/pyproject.toml` | Add/remove a `[dependency-groups.dbt-core-X-Y]` section with `dbt-core`, `dbt-postgres`, `dbt-duckdb` pins |
-| `integration_tests/noxfile.py` | Add/remove the uv group from the `UV_GROUPS` / parametrize list; check `dev_*` sessions still point to a valid group |
+| `integration_tests/noxfile_core.py` | Add/remove the uv group from `LOCAL_DBT_GROUPS` / `SETUP_DBT_GROUPS` and `@nox.parametrize`; check `dev_*` sessions still point to a valid group |
 | `.github/workflows/integration-tests.yml` | Add/remove the version from the `uv-group` matrix axis |
 | `dbt_project.yml` | Update `require-dbt-version` bounds if the new version is outside the current range |
 
@@ -42,9 +42,9 @@ dependencies = [
 
 **Dropping:** Remove the section and its `conflicts` references.
 
-### 3. Update `integration_tests/noxfile.py`
+### 3. Update `integration_tests/noxfile_core.py`
 
-Find the `UV_GROUPS` list (or parametrize decorator) that lists groups like `"dbt-core-1-10"`.
+Find `LOCAL_DBT_GROUPS` / `SETUP_DBT_GROUPS` (and `@nox.parametrize("uv_group", ...)`) that list groups like `"dbt-core-1-10"`.
 
 **Adding:** Append `"dbt-core-X-Y"` to the list.
 **Dropping:** Remove the entry. Verify `dev_unit_tests` and `dev_integration_tests` still reference a remaining group.
@@ -89,4 +89,4 @@ dbt-core `1.X.Y` → group name `dbt-core-1-X`, nox param `"dbt-core-1-X"`, CI m
 
 ## Reference: current version matrix
 
-Check `integration_tests/noxfile.py` for the authoritative list — this skill's examples may lag behind the repo.
+Check `integration_tests/noxfile_core.py` for the authoritative Core list — this skill's examples may lag behind the repo.

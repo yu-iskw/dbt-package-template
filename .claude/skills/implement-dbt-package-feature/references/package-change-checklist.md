@@ -76,7 +76,7 @@ For `dbt-data-privacy`-style packages, look for:
 - `integration_tests/run_unit_tests.sh`
 - `integration_tests/run_integration_tests.sh`
 - `integration_tests/scripts/generate_secured_models.sh`
-- `integration_tests/noxfile.py`
+- `integration_tests/noxfile_core.py`, `integration_tests/noxfile_fusion.py`, `integration_tests/nox_helpers.py`
 
 These are example upstream entrypoints, not guaranteed filenames in every host repo. Discover the repository's real local and CI commands before editing workflow docs or validation steps.
 

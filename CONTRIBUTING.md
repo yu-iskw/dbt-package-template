@@ -91,8 +91,8 @@ make run-integration-tests
 make run-fusion-tests
 ```
 
-- **dbt Core lane:** Postgres and DuckDB, `dbt-core-1-10` and `dbt-core-1-11` (via `nox` in `integration_tests/`).
-- **Fusion lane:** same adapter contract; install Fusion into the nox environment. Set **`DBT_FUSION_VERSION`** to pin a build (see [`integration_tests/README.md`](integration_tests/README.md)).
+- **dbt Core lane:** Postgres and DuckDB, `dbt-core-1-10` and `dbt-core-1-11` (via default `nox` / [`integration_tests/noxfile.py`](integration_tests/noxfile.py), which loads [`noxfile_core.py`](integration_tests/noxfile_core.py)).
+- **Fusion lane:** same adapter contract; install Fusion into the nox environment via [`integration_tests/noxfile_fusion.py`](integration_tests/noxfile_fusion.py) (`nox -f noxfile_fusion.py`). CI runs Fusion on **Python 3.12** only. Set **`DBT_FUSION_VERSION`** to pin a build (see [`integration_tests/README.md`](integration_tests/README.md)).
 
 `make run-fusion-tests` runs **both** Fusion unit and Fusion integration targets; you can also call `make run-unit-tests-fusion` or `make run-integration-tests-fusion` separately.
 
@@ -104,7 +104,7 @@ Fusion was removed during an earlier BigQuery-oriented harness migration and **r
 
 - **Docker Engine** and **Docker Compose v2** (Postgres-backed local tests start a Compose-managed container).
 - **[uv](https://docs.astral.sh/uv/)** — the harness under `integration_tests/` uses `uv sync` and `uv run nox ...`.
-- **Python** — `integration_tests/pyproject.toml` requires Python `>=3.10`. CI runs **3.10**, **3.11**, and **3.12**. Local `make` targets invoke nox sessions named with **3.12**; use a compatible interpreter or rely on `uv` to provision one.
+- **Python** — `integration_tests/pyproject.toml` requires Python `>=3.10`. The **dbt Core** integration job in CI runs **3.10**, **3.11**, and **3.12**. The **Fusion** job uses **3.12** only. Local `make` targets for Core use nox sessions pinned to **3.12** in session names; use a compatible interpreter or rely on `uv` to provision one.
 - **pre-commit** — install separately (for example `pip install pre-commit` or `pipx install pre-commit`) to run `make lint` from the repo root. There is no root `pyproject.toml` for dev tools.
 
 ### How to set up the development environment

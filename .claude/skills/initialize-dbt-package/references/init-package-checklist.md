@@ -47,7 +47,7 @@ These default Postgres database/schema and DuckDB schema to the old name. Align 
 | [`integration_tests/scripts/run_with_postgres_container.sh`](../../../../integration_tests/scripts/run_with_postgres_container.sh) | `CONTAINER_NAME` (suggest `PACKAGE_KEBAB-postgres`) |
 | [`integration_tests/Makefile`](../../../../integration_tests/Makefile) | `docker inspect` / error messages referencing `dbt-package-template-postgres` |
 | [`.github/workflows/integration-tests.yml`](../../../../.github/workflows/integration-tests.yml) | `POSTGRES_DB`, healthcheck, `DBT_POSTGRES_*` env |
-| [`integration_tests/noxfile.py`](../../../../integration_tests/noxfile.py) | DuckDB filename prefix `dbt_package_template_` → `PACKAGE_SNAKE_` |
+| [`integration_tests/nox_helpers.py`](../../../../integration_tests/nox_helpers.py) | DuckDB filename prefix `dbt_package_template_` → `PACKAGE_SNAKE_` in `build_env` |
 
 ## 6. Documentation and contributor text
 

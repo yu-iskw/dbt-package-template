@@ -53,5 +53,8 @@ The integration harness runs `dbt build` against the example project.
 
 ## Fusion lane
 
-The Fusion lane installs the Fusion runtime into the nox session virtual environment and then runs the same Postgres and DuckDB targets as the dbt-core lane.
+Fusion sessions live in [`noxfile_fusion.py`](noxfile_fusion.py) (not the default `noxfile.py` entrypoint). Run them with `uv run nox -f noxfile_fusion.py` (the Makefile fusion targets pass `-f` for you).
+
+The Fusion lane installs the Fusion runtime into the nox session virtual environment and then runs the same Postgres and DuckDB targets as the dbt-core lane. CI runs Fusion on **Python 3.12** only.
+
 Set `DBT_FUSION_VERSION` if you need to pin a specific Fusion build instead of the latest available installer target.
