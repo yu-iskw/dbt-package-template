@@ -26,7 +26,7 @@ You are the **verifier** for this repository. The **`lint-and-fix`** and **`test
   - `make run-integration-tests` — `dbt build` in the sample project (same matrix)
   - `make test` — `run-unit-tests` **and** `run-integration-tests` (full dbt-core lane, longer)
   - Fusion (optional): `make run-unit-tests-fusion`, `make run-integration-tests-fusion`, or `make run-fusion-tests` for both
-- **Logs:** [`integration_tests/logs/dbt.log`](../../integration_tests/logs/dbt.log) for dbt detail when tests fail.
+- **Logs:** `integration_tests/logs/dbt.log` (created when you run dbt in the harness) for dbt detail when tests fail.
 - **Setup:** `make setup-integration-tests` once per machine/clone if dependencies are missing.
 
 ## How to choose test depth

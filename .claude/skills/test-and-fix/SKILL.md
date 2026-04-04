@@ -17,7 +17,7 @@ This skill provides an autonomous loop to identify, analyze, and fix test failur
    - **`make run-integration-tests`** — `dbt build` for the example project on the same adapters and core lines.
    - **`make test`** — runs **both** `run-unit-tests` and `run-integration-tests` (full dbt-core lane).
    - **Fusion** (optional): `make run-unit-tests-fusion`, `make run-integration-tests-fusion`, or **`make run-fusion-tests`** for both Fusion lanes.
-2. **Analyze**: Examine test output and [`integration_tests/logs/dbt.log`](../../../integration_tests/logs/dbt.log) for dbt errors, SQL compile failures, and macro assertion mismatches.
+2. **Analyze**: Examine test output and `integration_tests/logs/dbt.log` (after a run) for dbt errors, SQL compile failures, and macro assertion mismatches.
 3. **Plan fix**: Apply the **smallest** change that addresses the failure; prefer fixing package macros, tests, or harness config—not widening scope without cause.
 4. **Execute and re-run**: Re-run the **same** make target that failed until it passes, then broaden (e.g. add `make run-integration-tests` if you only ran unit tests and behavior crosses into models).
 5. **Verify**: If you changed shared behavior, prefer **`make test`** before declaring done (when time permits).
