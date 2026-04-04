@@ -120,5 +120,5 @@ jobs:
         run: |
           mkdir -p target
           rm -f "${DBT_DUCKDB_PATH}"
-          uv run nox -s "fusion_unit_tests-${{ matrix.python-version }}"
-          uv run nox -s "fusion_integration_tests-${{ matrix.python-version }}"
+          uv run nox -f noxfile_fusion.py -s "fusion_unit_tests-${{ matrix.python-version }}"
+          uv run nox -f noxfile_fusion.py -s "fusion_integration_tests-${{ matrix.python-version }}"

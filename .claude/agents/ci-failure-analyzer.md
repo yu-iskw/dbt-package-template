@@ -37,6 +37,7 @@ You are the **CI failure analyzer** for this dbt macro package (Postgres + DuckD
 | `pre-commit` hook failure | YAML/SQL formatting, trailing whitespace, link rot |
 | `unknown shorthand flag: 'U' in -U` during **Initialize containers** / `docker create` | Postgres **service** `options`: `--health-cmd` must quote the full `pg_isready ...` command so `-U`/`-d` are not parsed as Docker flags |
 | DuckDB `Binder Error: Catalog "…" does not exist!` | dbt-duckdb sets `database` from the **file stem** of `path`; across multiple `dbt` / nox processes the catalog may not match. Prefer **`path: ":memory:"`** with **`attach`** of `DBT_DUCKDB_PATH` and a fixed **`database`/`alias`** (see `integration_tests/profiles/profiles.yml`); optional filename sanitization if you keep a single file `path`. |
+| `Sessions not found: fusion_*` / `Error while collecting sessions` (Nox) | Fusion sessions live in `integration_tests/noxfile_fusion.py`, not the default `noxfile.py` (Core only). Run **`nox -f noxfile_fusion.py -s 'fusion_unit_tests-<py>'`** (and match `@nox.session(python=…)` to the CI matrix). |
 
 ## Repo conventions
 

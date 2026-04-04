@@ -1,4 +1,8 @@
-"""Nox sessions for dbt Fusion (single Python; Postgres + DuckDB)."""
+"""Nox sessions for dbt Fusion (Python matrix; Postgres + DuckDB).
+
+CI must run these with `nox -f noxfile_fusion.py`; default `noxfile.py` loads
+only dbt Core sessions from `noxfile_core.py`.
+"""
 
 import importlib.util
 from pathlib import Path
@@ -15,6 +19,7 @@ _spec.loader.exec_module(_mod)
 from nox_helpers import ADAPTERS, FUSION_GROUP, get_dbt_command, install_dependencies, run_dbt_shell_script
 
 FUSION_PYTHON = "3.12"
+PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 
 nox.options.sessions = ["dev_unit_tests_fusion", "dev_integration_tests_fusion"]
 nox.options.default_venv_backend = "uv"
@@ -32,21 +37,21 @@ def dev_integration_tests_fusion(session):
     fusion_integration_tests(session)
 
 
-@nox.session(python=FUSION_PYTHON)
+@nox.session(python=PYTHON_VERSIONS)
 def fusion_unit_tests(session):
     """Run real Fusion unit tests on Postgres and DuckDB."""
     for adapter in ADAPTERS:
         run_dbt_shell_script(session, FUSION_GROUP, adapter, "run_unit_tests.sh")
 
 
-@nox.session(python=FUSION_PYTHON)
+@nox.session(python=PYTHON_VERSIONS)
 def fusion_integration_tests(session):
     """Run real Fusion integration tests on Postgres and DuckDB."""
     for adapter in ADAPTERS:
         run_dbt_shell_script(session, FUSION_GROUP, adapter, "run_integration_tests.sh")
 
 
-@nox.session(python=FUSION_PYTHON)
+@nox.session(python=PYTHON_VERSIONS)
 def setup_fusion_env(session):
     """Install dbt Fusion dependencies and print the bin path."""
     install_dependencies(session, FUSION_GROUP)
