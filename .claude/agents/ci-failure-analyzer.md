@@ -35,6 +35,7 @@ You are the **CI failure analyzer** for this dbt macro package (Postgres + DuckD
 | Failure only on dbt-core 1.11 | dbt API change — check `adapter.dispatch` or builtins |
 | Failure only on Python 3.10 | Type annotation or stdlib compatibility |
 | `pre-commit` hook failure | YAML/SQL formatting, trailing whitespace, link rot |
+| `unknown shorthand flag: 'U' in -U` during **Initialize containers** / `docker create` | Postgres **service** `options`: `--health-cmd` must quote the full `pg_isready ...` command so `-U`/`-d` are not parsed as Docker flags |
 
 ## Repo conventions
 
