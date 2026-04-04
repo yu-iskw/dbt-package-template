@@ -43,7 +43,8 @@ That target installs the Fusion runtime into the nox virtual environment and run
 
 - Add or update package macros under `macros/`.
 - Add matching macro tests under `integration_tests/macros/tests/`.
-- Reuse helpers in `integration_tests/macros/test_utils/` for assertions and query execution.
+- Use [dbt-unittest](https://github.com/yu-iskw/dbt-unittest) (`dbt_unittest.*`) for assertions.
+- Call package macros directly in SQL (for example `{{ dbt_package_template.normalize_text("'x'") }}`) and use dbt’s `run_query` when you need to execute that SQL and assert on the result.
 - Register new test macros from `integration_tests/macros/tests/test_macros.sql`.
 
 ### How to run integration testing

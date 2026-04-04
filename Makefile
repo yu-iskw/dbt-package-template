@@ -1,6 +1,9 @@
 lint:
 	pre-commit run -a
 
+update-pre-commit-hooks:
+	pre-commit autoupdate
+
 generate-toc:
 	markdown-toc --maxdepth 5 -i README.md
 
