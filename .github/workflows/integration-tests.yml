@@ -28,27 +28,6 @@ jobs:
   integration:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: dbt_package_template
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d dbt_package_template"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DBT_POSTGRES_HOST: localhost
-      DBT_POSTGRES_PORT: "5432"
-      DBT_POSTGRES_USER: postgres
-      DBT_POSTGRES_PASSWORD: postgres
-      DBT_POSTGRES_DATABASE: dbt_package_template
-      DBT_POSTGRES_SCHEMA: dbt_package_template
     steps:
       - name: Checkout
         uses: actions/checkout@v6
