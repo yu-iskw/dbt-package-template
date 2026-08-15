@@ -57,6 +57,12 @@ jobs:
           cache-dependency-glob: "integration_tests/pyproject.toml"
       - name: Install supported Python versions
         run: uv python install 3.10 3.11 3.12
+      - name: Prepare dbt packages once
+        env:
+          NOX_SPEC: nox[uv]==2026.7.11
+        run: >-
+          uvx --from "${NOX_SPEC}" nox -s
+          "prepare_packages(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
       - name: Run integration tests across Python versions in parallel
         env:
           DBT_POSTGRES_HOST: localhost
@@ -68,21 +74,25 @@ jobs:
           DBT_GROUP: ${{ matrix.dbt-group }}
           ADAPTER: ${{ matrix.adapter }}
           NOX_SPEC: nox[uv]==2026.7.11
+          DBT_SKIP_DEPS: "1"
         run: |
           set -euo pipefail
-          mkdir -p target
+          mkdir -p target logs
           uvx --from "${NOX_SPEC}" nox --list >/dev/null
 
           run_version() {
             local version="$1"
+            export DBT_TARGET_PATH="target/${version}"
+            export DBT_LOG_PATH="logs/${version}"
             export DBT_DUCKDB_PATH="${GITHUB_WORKSPACE}/integration_tests/target/ci_${GITHUB_RUN_ID}_${version}_${DBT_GROUP}_${ADAPTER}.duckdb"
+            rm -rf "${DBT_TARGET_PATH}" "${DBT_LOG_PATH}"
             rm -f "${DBT_DUCKDB_PATH}"
             uvx --from "${NOX_SPEC}" nox -s \
               "unit_tests-${version}(adapter='${ADAPTER}', uv_group='${DBT_GROUP}')" \
               "integration_tests-${version}(adapter='${ADAPTER}', uv_group='${DBT_GROUP}')"
           }
           export -f run_version
-          export GITHUB_WORKSPACE GITHUB_RUN_ID DBT_GROUP ADAPTER NOX_SPEC
+          export GITHUB_WORKSPACE GITHUB_RUN_ID DBT_GROUP ADAPTER NOX_SPEC DBT_SKIP_DEPS
 
           printf '%s\0' 3.10 3.11 3.12 \
             | xargs -0 -P "$(nproc)" -I{} bash -c 'run_version "$1"' _ {}
@@ -105,6 +115,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: dbt_package_template
         ports:
           - 5432:5432
@@ -127,6 +138,10 @@ jobs:
           cache-dependency-glob: "integration_tests/pyproject.toml"
       - name: Install supported Python versions
         run: uv python install 3.10 3.11 3.12
+      - name: Prepare dbt packages once
+        env:
+          NOX_SPEC: nox[uv]==2026.7.11
+        run: uvx --from "${NOX_SPEC}" nox -f noxfile_fusion.py -s prepare_packages_fusion
       - name: Run Fusion tests across Python versions in parallel
         env:
           DBT_POSTGRES_HOST: localhost
@@ -136,21 +151,25 @@ jobs:
           DBT_POSTGRES_DATABASE: dbt_package_template
           DBT_POSTGRES_SCHEMA: dbt_package_template
           NOX_SPEC: nox[uv]==2026.7.11
+          DBT_SKIP_DEPS: "1"
         run: |
           set -euo pipefail
-          mkdir -p target
+          mkdir -p target logs
           uvx --from "${NOX_SPEC}" nox -f noxfile_fusion.py --list >/dev/null
 
           run_version() {
             local version="$1"
+            export DBT_TARGET_PATH="target/fusion-${version}"
+            export DBT_LOG_PATH="logs/fusion-${version}"
             export DBT_DUCKDB_PATH="${GITHUB_WORKSPACE}/integration_tests/target/fusion_${GITHUB_RUN_ID}_${version}.duckdb"
+            rm -rf "${DBT_TARGET_PATH}" "${DBT_LOG_PATH}"
             rm -f "${DBT_DUCKDB_PATH}"
             uvx --from "${NOX_SPEC}" nox -f noxfile_fusion.py -s \
               "fusion_unit_tests-${version}" \
               "fusion_integration_tests-${version}"
           }
           export -f run_version
-          export GITHUB_WORKSPACE GITHUB_RUN_ID NOX_SPEC
+          export GITHUB_WORKSPACE GITHUB_RUN_ID NOX_SPEC DBT_SKIP_DEPS
 
           printf '%s\0' 3.10 3.11 3.12 \
             | xargs -0 -P "$(nproc)" -I{} bash -c 'run_version "$1"' _ {}
