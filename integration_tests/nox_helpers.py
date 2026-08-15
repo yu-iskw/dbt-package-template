@@ -56,34 +56,11 @@ def build_env(session, uv_group, adapter, dbt_cmd):
     return env
 
 
-def run_deps(session, dbt_cmd, adapter, env):
-    session.run(
-        dbt_cmd,
-        "deps",
-        "--profiles-dir",
-        "profiles",
-        "--target",
-        adapter,
-        env=env,
-        external=True,
-    )
-
-
-def prepare_dbt_packages(session, uv_group, adapter):
-    """Install the requested dbt environment and fetch dbt packages once."""
-    install_dependencies(session, uv_group)
-    dbt_cmd = get_dbt_command(session, uv_group)
-    env = build_env(session, uv_group, adapter, dbt_cmd)
-    run_deps(session, dbt_cmd, adapter, env)
-
-
 def run_dbt_shell_script(session, uv_group, adapter, script_name):
-    """Install deps, then run a bash harness script (unit or integration tests)."""
+    """Install dependencies and run a bash harness script."""
     install_dependencies(session, uv_group)
     dbt_cmd = get_dbt_command(session, uv_group)
     env = build_env(session, uv_group, adapter, dbt_cmd)
-    if env.get("DBT_SKIP_DEPS") != "1":
-        run_deps(session, dbt_cmd, adapter, env)
     session.run(
         "bash",
         script_name,
