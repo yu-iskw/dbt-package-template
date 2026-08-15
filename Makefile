@@ -30,6 +30,7 @@ test-integration:
 
 .PHONY: test-all
 test-all:
-	uv run --project integration_tests bash ./dev/test_all.sh
+	integration_tests/scripts/run_with_postgres_container.sh \
+		uv run bash ../dev/test_all.sh
 
 test: run-unit-tests run-integration-tests
