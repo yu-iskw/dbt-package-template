@@ -27,7 +27,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.10","3.11","3.12"]') }}
         dbt-group: ["dbt-core-1-10", "dbt-core-1-11"]
         adapter: ["postgres", "duckdb"]
     services:
@@ -52,12 +51,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
         with:
           enable-cache: true
           cache-dependency-glob: "integration_tests/pyproject.toml"
-          python-version: ${{ matrix.python-version }}
-      - name: Run integration tests
+      - name: Install supported Python versions
+        run: uv python install 3.10 3.11 3.12
+      - name: Run integration tests across Python versions in parallel
         env:
           DBT_POSTGRES_HOST: localhost
           DBT_POSTGRES_PORT: "5432"
@@ -65,17 +65,32 @@ jobs:
           DBT_POSTGRES_PASSWORD: postgres
           DBT_POSTGRES_DATABASE: dbt_package_template
           DBT_POSTGRES_SCHEMA: dbt_package_template
-          DBT_DUCKDB_PATH: ${{ github.workspace }}/integration_tests/target/ci_${{ github.run_id }}_${{ matrix.python-version }}_${{ matrix.dbt-group }}_${{ matrix.adapter }}.duckdb
+          DBT_GROUP: ${{ matrix.dbt-group }}
+          ADAPTER: ${{ matrix.adapter }}
+          NOX_SPEC: nox[uv]==2026.7.11
         run: |
+          set -euo pipefail
           mkdir -p target
-          rm -f "${DBT_DUCKDB_PATH}"
-          uv run nox -s "unit_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
-          uv run nox -s "integration_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
+          uvx --from "${NOX_SPEC}" nox --list >/dev/null
+
+          run_version() {
+            local version="$1"
+            export DBT_DUCKDB_PATH="${GITHUB_WORKSPACE}/integration_tests/target/ci_${GITHUB_RUN_ID}_${version}_${DBT_GROUP}_${ADAPTER}.duckdb"
+            rm -f "${DBT_DUCKDB_PATH}"
+            uvx --from "${NOX_SPEC}" nox -s \
+              "unit_tests-${version}(adapter='${ADAPTER}', uv_group='${DBT_GROUP}')" \
+              "integration_tests-${version}(adapter='${ADAPTER}', uv_group='${DBT_GROUP}')"
+          }
+          export -f run_version
+          export GITHUB_WORKSPACE GITHUB_RUN_ID DBT_GROUP ADAPTER NOX_SPEC
+
+          printf '%s\0' 3.10 3.11 3.12 \
+            | xargs -0 -P "$(nproc)" -I{} bash -c 'run_version "$1"' _ {}
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: integration-logs-${{ matrix.python-version }}-${{ matrix.dbt-group }}-${{ matrix.adapter }}
+          name: integration-logs-${{ matrix.dbt-group }}-${{ matrix.adapter }}
           retention-days: 3
           path: |
             integration_tests/logs
@@ -84,10 +99,6 @@ jobs:
   fusion:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.10","3.11","3.12"]') }}
     services:
       postgres:
         image: postgres:16
@@ -110,12 +121,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
         with:
           enable-cache: true
           cache-dependency-glob: "integration_tests/pyproject.toml"
-          python-version: ${{ matrix.python-version }}
-      - name: Run Fusion tests
+      - name: Install supported Python versions
+        run: uv python install 3.10 3.11 3.12
+      - name: Run Fusion tests across Python versions in parallel
         env:
           DBT_POSTGRES_HOST: localhost
           DBT_POSTGRES_PORT: "5432"
@@ -123,9 +135,22 @@ jobs:
           DBT_POSTGRES_PASSWORD: postgres
           DBT_POSTGRES_DATABASE: dbt_package_template
           DBT_POSTGRES_SCHEMA: dbt_package_template
-          DBT_DUCKDB_PATH: ${{ github.workspace }}/integration_tests/target/fusion_${{ github.run_id }}_${{ matrix.python-version }}.duckdb
+          NOX_SPEC: nox[uv]==2026.7.11
         run: |
+          set -euo pipefail
           mkdir -p target
-          rm -f "${DBT_DUCKDB_PATH}"
-          uv run nox -f noxfile_fusion.py -s "fusion_unit_tests-${{ matrix.python-version }}"
-          uv run nox -f noxfile_fusion.py -s "fusion_integration_tests-${{ matrix.python-version }}"
+          uvx --from "${NOX_SPEC}" nox -f noxfile_fusion.py --list >/dev/null
+
+          run_version() {
+            local version="$1"
+            export DBT_DUCKDB_PATH="${GITHUB_WORKSPACE}/integration_tests/target/fusion_${GITHUB_RUN_ID}_${version}.duckdb"
+            rm -f "${DBT_DUCKDB_PATH}"
+            uvx --from "${NOX_SPEC}" nox -f noxfile_fusion.py -s \
+              "fusion_unit_tests-${version}" \
+              "fusion_integration_tests-${version}"
+          }
+          export -f run_version
+          export GITHUB_WORKSPACE GITHUB_RUN_ID NOX_SPEC
+
+          printf '%s\0' 3.10 3.11 3.12 \
+            | xargs -0 -P "$(nproc)" -I{} bash -c 'run_version "$1"' _ {}
