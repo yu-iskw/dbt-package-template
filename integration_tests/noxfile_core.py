@@ -1,4 +1,4 @@
-"""Nox sessions for dbt Core (Python × dbt group × adapter matrix)."""
+"""Nox sessions for dbt Core compatibility testing."""
 
 import importlib.util
 from pathlib import Path
@@ -12,14 +12,16 @@ if _spec is None or _spec.loader is None:
 _mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
 
-from nox_helpers import ADAPTERS, get_dbt_command, install_dependencies, prepare_dbt_packages, run_dbt_shell_script
-
-nox.options.sessions = ["dev_unit_tests", "dev_integration_tests"]
-nox.options.default_venv_backend = "uv"
+from nox_helpers import ADAPTERS, get_dbt_command, install_dependencies, run_dbt_shell_script
 
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 LOCAL_DBT_GROUPS = ["dbt-core-1-10", "dbt-core-1-11"]
-SETUP_DBT_GROUPS = ["dbt-core-1-10", "dbt-core-1-11"]
+SETUP_DBT_GROUPS = LOCAL_DBT_GROUPS
+
+nox.options.sessions = ["dev_unit_tests", "dev_integration_tests"]
+nox.options.default_venv_backend = "uv"
+nox.options.download_python = "auto"
+nox.options.reuse_venv = "yes"
 
 
 @nox.session(python="3.12")
@@ -32,14 +34,6 @@ def dev_unit_tests(session):
 def dev_integration_tests(session):
     """Run the starter integration tests quickly on Postgres."""
     integration_tests(session, "dbt-core-1-10", "postgres")
-
-
-@nox.session(python="3.12")
-@nox.parametrize("uv_group", LOCAL_DBT_GROUPS)
-@nox.parametrize("adapter", ADAPTERS)
-def prepare_packages(session, uv_group, adapter):
-    """Fetch dbt packages once before parallel Python-version sessions."""
-    prepare_dbt_packages(session, uv_group, adapter)
 
 
 @nox.session(python=PYTHON_VERSIONS)
@@ -56,6 +50,15 @@ def unit_tests(session, uv_group, adapter):
 def integration_tests(session, uv_group, adapter):
     """Run dbt build for the example project for a dbt-core line and adapter."""
     run_dbt_shell_script(session, uv_group, adapter, "run_integration_tests.sh")
+
+
+@nox.session(python=PYTHON_VERSIONS, tags=["ci"])
+@nox.parametrize("uv_group", LOCAL_DBT_GROUPS)
+@nox.parametrize("adapter", ADAPTERS)
+def compatibility_tests(session, uv_group, adapter):
+    """Run unit and integration tests for one isolated compatibility environment."""
+    unit_tests(session, uv_group, adapter)
+    integration_tests(session, uv_group, adapter)
 
 
 @nox.session(python=PYTHON_VERSIONS)
