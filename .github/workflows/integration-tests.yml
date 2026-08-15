@@ -3,20 +3,31 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/integration-tests.yml
+      - macros/**/*
+      - integration_tests/**/*
+      - dbt_project.yml
   pull_request:
     paths:
       - .github/workflows/integration-tests.yml
       - macros/**/*
       - integration_tests/**/*
       - dbt_project.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   integration:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.10","3.11","3.12"]') }}
         dbt-group: ["dbt-core-1-10", "dbt-core-1-11"]
         adapter: ["postgres", "duckdb"]
     services:
@@ -40,14 +51,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "integration_tests/pyproject.toml"
           python-version: ${{ matrix.python-version }}
-
       - name: Run integration tests
         env:
           DBT_POSTGRES_HOST: localhost
@@ -62,7 +71,6 @@ jobs:
           rm -f "${DBT_DUCKDB_PATH}"
           uv run nox -s "unit_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
           uv run nox -s "integration_tests-${{ matrix.python-version }}(adapter='${{ matrix.adapter }}', uv_group='${{ matrix.dbt-group }}')"
-
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v7
@@ -74,11 +82,12 @@ jobs:
             integration_tests/target
 
   fusion:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.10","3.11","3.12"]') }}
     services:
       postgres:
         image: postgres:16
@@ -100,14 +109,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "integration_tests/pyproject.toml"
           python-version: ${{ matrix.python-version }}
-
       - name: Run Fusion tests
         env:
           DBT_POSTGRES_HOST: localhost
