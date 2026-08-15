@@ -28,4 +28,8 @@ run-fusion-tests:
 test-integration:
 	$(MAKE) -C integration_tests test
 
+.PHONY: test-all
+test-all:
+	uv run --project integration_tests bash ./dev/test_all.sh
+
 test: run-unit-tests run-integration-tests
