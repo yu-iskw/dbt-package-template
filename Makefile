@@ -28,4 +28,9 @@ run-fusion-tests:
 test-integration:
 	$(MAKE) -C integration_tests test
 
+.PHONY: test-all
+test-all:
+	integration_tests/scripts/run_with_postgres_container.sh \
+		uv run bash ../dev/test_all.sh
+
 test: run-unit-tests run-integration-tests
