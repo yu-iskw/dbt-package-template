@@ -43,6 +43,8 @@ def build_env(session, uv_group, adapter, dbt_cmd):
     env = dict(os.environ)
     env.update(session.env)
     env["DBT_CMD"] = dbt_cmd
+    if uv_group == FUSION_GROUP and adapter == "postgres":
+        env["DBT_ALLOW_EXPERIMENTAL_ADAPTERS"] = "true"
 
     if adapter == "duckdb" and "DBT_DUCKDB_PATH" not in env:
         duckdb_dir = INTEGRATION_TESTS_DIR / "target"
